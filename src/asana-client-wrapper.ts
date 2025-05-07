@@ -54,9 +54,7 @@ export class AsanaClientWrapper {
     } = searchOpts;
 
     // Build search parameters
-    const searchParams: any = {
-      ...otherOpts // Include any additional filter parameters
-    };
+    const searchParams: any = this.convertOptsToDots(otherOpts);
 
     // Handle custom fields if provided
     if (searchOpts.custom_fields) {
@@ -291,5 +289,35 @@ export class AsanaClientWrapper {
   async getTagsForWorkspace(workspace_gid: string, opts: any = {}) {
     const response = await this.tags.getTagsForWorkspace(workspace_gid, opts);
     return response.data;
+  }
+
+  private convertOptsToDots(opts: Record<string, any>) {
+    const blacklist = [
+      'is_blocking',
+      'is_blocked',
+      'has_attachment',
+      'completed',
+      'is_subtask',
+      'sort_by',
+      'sort_ascending',
+    ]
+
+    return Object.entries(opts).reduce((acc, [key, value]) => {
+      if (blacklist.includes(key)) {
+        return {...acc, [key]: value};
+      }
+
+      // Find the last underscore in the key
+      const lastUnderscoreIndex = key.lastIndexOf('_');
+
+      // If there's no underscore, keep the key as is
+      if (lastUnderscoreIndex === -1) {
+        return {...acc, [key]: value};
+      }
+
+      // Replace only the last underscore with a dot
+      const newKey = key.substring(0, lastUnderscoreIndex) + '.' + key.substring(lastUnderscoreIndex + 1);
+      return {...acc, [newKey]: value};
+    }, {});
   }
 }
